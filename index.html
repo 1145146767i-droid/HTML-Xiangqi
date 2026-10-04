@@ -225,7 +225,7 @@ function negamax(b,side,depth,alpha,beta,ply){
  moves.sort((a,z)=>{
   const ac=pieceVal(a.cap),zc=pieceVal(z.cap);
   if(ac!==zc)return zc-ac;
-  return givesCheck(b,z,side)?1:0-givesCheck(b,a,side)?1:0;
+  const zc=givesCheck(b,z,side),ac=givesCheck(b,a,side);return zc===ac?0:(zc?1:-1);
  });
  let best=-Infinity;
  for(const m of moves){
