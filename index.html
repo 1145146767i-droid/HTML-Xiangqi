@@ -111,90 +111,188 @@ function pieceValue(c){
  if(t==="p")return 1;
  return 0;
 }
-function evalBoard(){
- let score=0;
- for(const p of pieces){
-  const t=p.c.toLowerCase(),v=t==="k"?10000:t==="r"?9:t==="c"?4.5:t==="n"?4:(t==="a"||t==="b")?2:(red(p.c)&&p.y<=4)||(!red(p.c)&&p.y>=5)?2:1;
-  const center=(4-Math.abs(4-p.x))*0.08;
-  const advance=t==="p"?((red(p.c)?9-p.y:p.y)*0.12):0;
-  const val=v+center+advance;
-  score+=(red(p.c)?-val:val);
+let aiWorker=null,aiTimerToken=0;
+const AI_WORKER_CODE=`
+const W=9,H=10,N=90;
+const red=c=>/[KABNRCP]/.test(c);
+const type=c=>c.toLowerCase();
+const inside=(x,y)=>x>=0&&x<9&&y>=0&&y<10;
+const idx=(x,y)=>y*9+x;
+const xy=i=>[i%9,Math.floor(i/9)];
+function palace(c,x,y){return x>=3&&x<=5&&(red(c)?y>=7:y<=2)}
+function lineCount(b,fx,fy,tx,ty){
+ let dx=Math.sign(tx-fx),dy=Math.sign(ty-fy),x=fx+dx,y=fy+dy,n=0;
+ while(x!==tx||y!==ty){if(b[idx(x,y)])n++;x+=dx;y+=dy}
+ return n;
+}
+function pseudo(b,from,to){
+ const c=b[from],d=b[to]; if(!c||from===to||(d&&red(c)===red(d))||type(d)==="k")return false;
+ const [fx,fy]=xy(from),[tx,ty]=xy(to),dx=tx-fx,dy=ty-fy,ax=Math.abs(dx),ay=Math.abs(dy),t=type(c);
+ if(t==="k")return ax+ay===1&&palace(c,tx,ty);
+ if(t==="a")return ax===1&&ay===1&&palace(c,tx,ty);
+ if(t==="b")return ax===2&&ay===2&&(red(c)?ty>=5:ty<=4)&&!b[idx(fx+dx/2,fy+dy/2)];
+ if(t==="n")return ax*ay===2&&!b[idx(fx+(ax===1?0:dx/2),fy+(ay===1?0:dy/2))];
+ if(t==="r")return (dx===0||dy===0)&&lineCount(b,fx,fy,tx,ty)===0;
+ if(t==="c")return (dx===0||dy===0)&&lineCount(b,fx,fy,tx,ty)===(d?1:0);
+ if(t==="p"){
+  const f=red(c)?-1:1,crossed=red(c)?fy<=4:fy>=5;
+  return dy===f&&(dx===0||(crossed&&ax===1));
  }
- return score;
+ return false;
 }
-function simulateMove(p,x,y,fn){
- const order=pieces.slice();
- const coords=order.map(q=>[q,q.x,q.y]);
- const dest=at(x,y);
- if(dest)pieces.splice(pieces.indexOf(dest),1);
- const ox=p.x,oy=p.y;
- p.x=x;p.y=y;
- try{return fn(p,dest)}
- finally{
-  for(const [q,qx,qy] of coords){q.x=qx;q.y=qy}
-  pieces.length=0;
-  for(const q of order)pieces.push(q);
-  p.x=ox;p.y=oy;
+function kingIndex(b,side){const k=side==="black"?"k":"K";return b.indexOf(k)}
+function inCheck(b,side){
+ const k=kingIndex(b,side); if(k<0)return true;
+ const enemy=side==="black"?"red":"black";
+ for(let i=0;i<N;i++)if(b[i]&&red(b[i])===(enemy==="red")&&pseudo(b,i,k))return true;
+ const [kx,ky]=xy(k);
+ for(let i=0;i<N;i++)if(b[i]=== (side==="black"?"K":"k")){
+  const [x,y]=xy(i);if(x===kx&&lineCount(b,x,y,kx,ky)===0)return true;
  }
+ return false;
 }
-function simulateScore(p,x,y){
- return simulateMove(p,x,y,()=>{
-  let score=evalBoard();
-  if(inCheck("red"))score+=1.5;
-  return score;
- });
+function make(b,m){
+ const cap=b[m.to],c=b[m.from];b[m.to]=c;b[m.from]="";
+ return cap;
 }
-function replyScoreAfterBlackMove(p,x,y){
- return simulateMove(p,x,y,()=>{
-  if(inCheck("red")){
-   const replies=allMoves("red");
-   if(!replies.length)return 100000;
+function unmake(b,m,cap){b[m.from]=b[m.to];b[m.to]=cap||""}
+function legal(b,m,side){
+ if(!pseudo(b,m.from,m.to))return false;
+ const cap=make(b,m),ok=!inCheck(b,side);unmake(b,m,cap);return ok;
+}
+function givesCheck(b,m,side){
+ const cap=make(b,m),v=inCheck(b,side==="black"?"red":"black");unmake(b,m,cap);return v;
+}
+function gen(b,side,capturesOnly=false){
+ const out=[];
+ for(let i=0;i<N;i++){
+  const c=b[i];if(!c||red(c)!==(side==="red"))continue;
+  for(let j=0;j<N;j++){
+   if(capturesOnly&&!b[j])continue;
+   if(pseudo(b,i,j)){const m={from:i,to:j,cap:b[j]||""};if(legal(b,m,side))out.push(m)}
   }
-  const replies=allMoves("red");
-  if(!replies.length)return inCheck("red")?100000:0;
-  let worstForBlack=Infinity;
-  for(const rp of replies){
-   for(const [rx,ry] of movesFor(rp)){
-    const s=simulateMove(rp,rx,ry,()=>evalBoard());
-    if(s<worstForBlack)worstForBlack=s;
-   }
-  }
-  return worstForBlack;
+ }
+ return out;
+}
+const val={k:100000,r:900,c:450,n:400,a:200,b:200,p:100};
+function pieceVal(c){return c?val[type(c)]||0:0}
+function pst(c,x,y,b){
+ const t=type(c),rx=red(c)?x:8-x,ry=red(c)?y:9-y;
+ const center=(4-Math.abs(4-rx));
+ if(t==="p")return (red(c)?9-y:y)*18 + (ry>=5?120:0) + center*8;
+ if(t==="n")return center*18 + (ry>=3&&ry<=6?35:0);
+ if(t==="c")return center*14 + (ry===4||ry===5?30:0);
+ if(t==="r")return center*8 + (ry===4||ry===5?22:0);
+ if(t==="a"||t==="b")return (palace(c,x,y)?18:0);
+ return 0;
+}
+function evalBoard(b){
+ let s=0,blackR=0,redR=0;
+ for(let i=0;i<N;i++)if(b[i]){
+  const c=b[i],v=pieceVal(c)+pst(c,...xy(i),b);
+  s+=(red(c)?-v:v);
+  if(c==="r")blackR++;if(c==="R")redR++;
+ }
+ for(let side of ["black","red"]){
+  const ms=gen(b,side).length;
+  s+=(side==="black"?1:-1)*ms*3;
+ }
+ return s;
+}
+let deadline=0,nodes=0,stopped=false;
+function timeUp(){return performance.now()>=deadline}
+function qsearch(b,side,alpha,beta,ply){
+ if(timeUp()){stopped=true;return 0}
+ nodes++;
+ let stand=(side==="black"?1:-1)*evalBoard(b);
+ if(stand>=beta)return beta;if(stand>alpha)alpha=stand;
+ const moves=gen(b,side,true);
+ moves.sort((a,z)=>pieceVal(z.cap)-pieceVal(a.cap));
+ for(const m of moves){
+  const cap=make(b,m),score=-qsearch(b,side==="black"?"red":"black",-beta,-alpha,ply+1);
+  unmake(b,m,cap);
+  if(stopped)return 0;
+  if(score>=beta)return beta;if(score>alpha)alpha=score;
+ }
+ return alpha;
+}
+function negamax(b,side,depth,alpha,beta,ply){
+ if(timeUp()){stopped=true;return 0}
+ nodes++;
+ const moves=gen(b,side);
+ if(!moves.length)return inCheck(b,side)?-100000+ply:0;
+ if(depth<=0)return qsearch(b,side,alpha,beta,ply);
+ moves.sort((a,z)=>{
+  const ac=pieceVal(a.cap),zc=pieceVal(z.cap);
+  if(ac!==zc)return zc-ac;
+  return givesCheck(b,z,side)?1:0-givesCheck(b,a,side)?1:0;
  });
+ let best=-Infinity;
+ for(const m of moves){
+  const cap=make(b,m),score=-negamax(b,side==="black"?"red":"black",depth-1,-beta,-alpha,ply+1);
+  unmake(b,m,cap);
+  if(stopped)return 0;
+  if(score>best)best=score;
+  if(score>alpha)alpha=score;
+  if(alpha>=beta)break;
+ }
+ return best;
+}
+function search(b,maxDepth,limit){
+ deadline=performance.now()+limit;let best=null,bestScore=-Infinity,completed=0;
+ for(let depth=1;depth<=maxDepth;depth++){
+  if(timeUp())break;stopped=false;nodes=0;
+  const side="black",moves=gen(b,side);
+  moves.sort((a,z)=>pieceVal(z.cap)-pieceVal(a.cap));
+  let localBest=-Infinity,local=[];
+  for(const m of moves){
+   const cap=make(b,m),score=-negamax(b,"red",depth-1,-1000000,1000000,1);
+   unmake(b,m,cap);
+   if(stopped)break;
+   if(score>localBest){localBest=score;local=[m]}
+   else if(Math.abs(score-localBest)<=20)local.push(m);
+  }
+  if(!stopped&&local.length){best=local[Math.floor(Math.random()*local.length)];bestScore=localBest;completed=depth}
+  if(bestScore>=99900)break;
+ }
+ return {best,score:bestScore,depth:completed,nodes};
+}
+self.onmessage=e=>{
+ const {board,maxDepth,time}=e.data;
+ const r=search(board.slice(),maxDepth,time);
+ self.postMessage(r);
+};
+`;
+function ensureAiWorker(){
+ if(aiWorker)return aiWorker;
+ const blob=new Blob([AI_WORKER_CODE],{type:"application/javascript"});
+ aiWorker=new Worker(URL.createObjectURL(blob));
+ return aiWorker;
 }
 function chooseAiMove(){
- const candidates=[];
- for(const p of pieces)if(!red(p.c)){
-  for(const [x,y] of movesFor(p)){
-   const captured=at(x,y);
-   let score;
-   if(aiLevel===1){
-    score=simulateScore(p,x,y);
-    
-   }else{
-    score=replyScoreAfterBlackMove(p,x,y);
-    
-   }
-   candidates.push({p,x,y,score});
-  }
- }
- if(!candidates.length)return null;
- candidates.sort((a,b)=>b.score-a.score);
- const pool=aiLevel===1?candidates.slice(0,Math.min(3,candidates.length)):candidates.slice(0,Math.min(2,candidates.length));
- return pool[Math.floor(Math.random()*pool.length)];
+ const b=Array(90).fill("");
+ for(const p of pieces)b[p.y*9+p.x]=p.c;
+ const depth=aiLevel===1?2:aiLevel===2?3:4;
+ const time=aiLevel===1?450:aiLevel===2?900:1500;
+ return {board:b,depth,time};
 }
-let aiTimerToken=0;
 function scheduleAi(){
  if(!aiEnabled||side!=="black"||over||aiThinking)return;
  aiThinking=true;msg.textContent="AI 正在思考……";
  const token=++aiTimerToken;
- setTimeout(()=>{
+ const w=ensureAiWorker();
+ w.onmessage=e=>{
   if(token!==aiTimerToken){aiThinking=false;return}
   aiThinking=false;
   if(!aiEnabled||side!=="black"||over)return;
-  const move=chooseAiMove();
-  if(move)makeMove(move.p,move.x,move.y);
- },aiLevel===1?350:650);
+  const m=e.data.best;
+  if(!m)return;
+  const p=pieces.find(q=>q.x===m.from%9&&q.y===Math.floor(m.from/9));
+  if(p&&p.c===pieces.find(q=>q.x===m.to%9&&q.y===Math.floor(m.to/9))?.c) return;
+  const x=m.to%9,y=Math.floor(m.to/9);
+  if(p&&legal(p,x,y))makeMove(p,x,y);
+ };
+ w.postMessage(chooseAiMove());
 }
 function clickPoint(x,y){if(over)return;const p=at(x,y);
  if(selected){if(legal(selected,x,y)){makeMove(selected,x,y);return}if(p&&red(p.c)===(side==="red")){selected=p;msg.textContent="已选择 "+name[p.c]+"，请选择目标位置";render();return}msg.textContent="这里不能走";return}
@@ -204,13 +302,14 @@ function addMarker(x,y,cls){const m=document.createElement("i");m.className="mar
 function render(){
  board.querySelectorAll(".point,.marker").forEach(e=>e.remove());
  [[0,3,"tl"],[2,3,"tl"],[4,3,"tl"],[6,3,"tl"],[8,3,"tr"],[1,2,"tl"],[7,2,"tr"],[0,6,"bl"],[2,6,"bl"],[4,6,"bl"],[6,6,"br"],[8,6,"br"],[1,7,"bl"],[7,7,"br"]].forEach(v=>addMarker(v[0],v[1],v[2]));
+ const selectedMoves=selected?movesFor(selected):[];
  for(let y=0;y<10;y++)for(let x=0;x<9;x++){
   const pt=document.createElement("div");pt.className="point";pt.style.left=(5.5+x*11.125)+"%";pt.style.top=(4.8+y*10.044444)+"%";
   const p=at(x,y);
   if(last&&((last.ox===x&&last.oy===y)||(last.x===x&&last.y===y)))pt.classList.add("last");
   if(p){const el=document.createElement("div");el.className="piece "+(red(p.c)?"red":"black");el.textContent=name[p.c];pt.appendChild(el)}
   if(selected&&selected.x===x&&selected.y===y)pt.classList.add("selected");
-  if(selected&&movesFor(selected).some(v=>v[0]===x&&v[1]===y))pt.classList.add(p?"capture":"legal");
+  if(selectedMoves.some(v=>v[0]===x&&v[1]===y))pt.classList.add(p?"capture":"legal");
   pt.onclick=()=>clickPoint(x,y);board.appendChild(pt);
  }
  const chk=inCheck(side);turnEl.textContent=over?"对局结束":(side==="red"?"红方":"黑方")+" · "+(chk?"将军":"走棋");
@@ -230,14 +329,16 @@ document.querySelector("#aiDepth").onclick=()=>{aiLevel=aiLevel===1?2:1;document
 document.querySelector("#reset").onclick=()=>{
  aiTimerToken++;
  aiThinking=false;
+ if(aiWorker){aiWorker.terminate();aiWorker=null}
  initial();
 };
 document.querySelector("#undo").onclick=()=>{
  aiTimerToken++;
  aiThinking=false;
+ if(aiWorker){aiWorker.terminate();aiWorker=null}
  if(!history.length)return;
  let h=history.pop();
- if(aiEnabled&&h.side==="red"&&history.length)h=history.pop();
+ if(aiEnabled&&h.side==="black"&&history.length)h=history.pop();
  if(!h)return;
  pieces.length=0;
  for(const q of h.pieces)pieces.push({...q});
