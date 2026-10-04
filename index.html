@@ -102,60 +102,94 @@ function makeMove(p,x,y){
  render();renderMoves();scheduleAi()
 }
 function pieceValue(c){
- const t=c.toLowerCase(),p=red(c);
+ const t=c.toLowerCase();
  if(t==="k")return 10000;
  if(t==="r")return 9;
  if(t==="c")return 4.5;
  if(t==="n")return 4;
  if(t==="a"||t==="b")return 2;
- if(t==="p")return p&&pieces.find(q=>q.c===c&&q.x===arguments[1]&&q.y===arguments[2])?1:1;
+ if(t==="p")return 1;
  return 0;
 }
 function evalBoard(){
  let score=0;
  for(const p of pieces){
   const t=p.c.toLowerCase(),v=t==="k"?10000:t==="r"?9:t==="c"?4.5:t==="n"?4:(t==="a"||t==="b")?2:(red(p.c)&&p.y<=4)||(!red(p.c)&&p.y>=5)?2:1;
-  const mobility=movesFor(p).length;
   const center=(4-Math.abs(4-p.x))*0.08;
   const advance=t==="p"?((red(p.c)?9-p.y:p.y)*0.12):0;
-  const val=v+mobility*0.06+center+advance;
+  const val=v+center+advance;
   score+=(red(p.c)?-val:val);
  }
  return score;
 }
+function simulateMove(p,x,y,fn){
+ const order=pieces.slice();
+ const coords=order.map(q=>[q,q.x,q.y]);
+ const dest=at(x,y);
+ if(dest)pieces.splice(pieces.indexOf(dest),1);
+ const ox=p.x,oy=p.y;
+ p.x=x;p.y=y;
+ try{return fn(p,dest)}
+ finally{
+  for(const [q,qx,qy] of coords){q.x=qx;q.y=qy}
+  pieces.length=0;
+  for(const q of order)pieces.push(q);
+  p.x=ox;p.y=oy;
+ }
+}
 function simulateScore(p,x,y){
- const snapshot=pieces.map(q=>({...q}));
- const idx=pieces.findIndex(q=>q===p);
- if(idx<0)return -99999;
- const target=at(x,y);
- if(target)pieces.splice(pieces.indexOf(target),1);
- const live=pieces.find(q=>q.c===p.c&&q.x===p.x&&q.y===p.y);
- if(!live){pieces=snapshot;return -99999}
- live.x=x;live.y=y;
- const score=evalBoard();
- pieces=snapshot;
- return score;
+ return simulateMove(p,x,y,()=>{
+  let score=evalBoard();
+  if(inCheck("red"))score+=1.5;
+  return score;
+ });
+}
+function replyScoreAfterBlackMove(p,x,y){
+ return simulateMove(p,x,y,()=>{
+  if(inCheck("red")){
+   const replies=allMoves("red");
+   if(!replies.length)return 100000;
+  }
+  const replies=allMoves("red");
+  if(!replies.length)return inCheck("red")?100000:0;
+  let worstForBlack=Infinity;
+  for(const rp of replies){
+   for(const [rx,ry] of movesFor(rp)){
+    const s=simulateMove(rp,rx,ry,()=>evalBoard());
+    if(s<worstForBlack)worstForBlack=s;
+   }
+  }
+  return worstForBlack;
+ });
 }
 function chooseAiMove(){
  const candidates=[];
  for(const p of pieces)if(!red(p.c)){
   for(const [x,y] of movesFor(p)){
    const captured=at(x,y);
-   let score=simulateScore(p,x,y);
-   if(captured)score+=pieceValue(captured.c)*1.8;
-   if(inCheck("red"))score+=1.5;
+   let score;
+   if(aiLevel===1){
+    score=simulateScore(p,x,y);
+    if(captured)score+=pieceValue(captured.c)*0.35;
+   }else{
+    score=replyScoreAfterBlackMove(p,x,y);
+    if(captured)score+=pieceValue(captured.c)*0.2;
+   }
    candidates.push({p,x,y,score});
   }
  }
  if(!candidates.length)return null;
  candidates.sort((a,b)=>b.score-a.score);
- const pool=candidates.slice(0,Math.min(3,candidates.length));
+ const pool=aiLevel===1?candidates.slice(0,Math.min(3,candidates.length)):candidates.slice(0,Math.min(2,candidates.length));
  return pool[Math.floor(Math.random()*pool.length)];
 }
+let aiTimerToken=0;
 function scheduleAi(){
  if(!aiEnabled||side!=="black"||over||aiThinking)return;
  aiThinking=true;msg.textContent="AI 正在思考……";
+ const token=++aiTimerToken;
  setTimeout(()=>{
+  if(token!==aiTimerToken){aiThinking=false;return}
   aiThinking=false;
   if(!aiEnabled||side!=="black"||over)return;
   const move=chooseAiMove();
@@ -188,7 +222,23 @@ function renderMoves(){
 }
 document.querySelector("#aiToggle").onclick=()=>{aiEnabled=!aiEnabled;document.querySelector("#aiToggle").textContent="🤖 AI："+(aiEnabled?"开启（黑方）":"关闭");if(aiEnabled&&side==="black")scheduleAi()};
 document.querySelector("#aiDepth").onclick=()=>{aiLevel=aiLevel===1?2:1;document.querySelector("#aiDepth").textContent=aiLevel===1?"难度：随机优选":"难度：更认真"};
-document.querySelector("#reset").onclick=()=>{aiThinking=false;initial()};
-document.querySelector("#undo").onclick=()=>{aiThinking=false;const h=history.pop();if(!h)return;pieces=h.pieces.map(q=>({...q}));side=h.side;last=h.last;positionCounts={...h.positionCounts};selected=null;over=false;msg.textContent="已悔棋";render();renderMoves()};
+document.querySelector("#reset").onclick=()=>{
+ aiTimerToken++;
+ aiThinking=false;
+ initial();
+};
+document.querySelector("#undo").onclick=()=>{
+ aiTimerToken++;
+ aiThinking=false;
+ if(!history.length)return;
+ let h=history.pop();
+ if(aiEnabled&&h.side==="red"&&history.length)h=history.pop();
+ if(!h)return;
+ pieces.length=0;
+ for(const q of h.pieces)pieces.push({...q});
+ side=h.side;last=h.last;positionCounts={...h.positionCounts};selected=null;over=false;
+ msg.textContent="已悔棋";
+ render();renderMoves();
+};
 initial();
 </script></body></html>
