@@ -125,9 +125,13 @@ function evalBoard(){
 }
 function simulateScore(p,x,y){
  const snapshot=pieces.map(q=>({...q}));
+ const idx=pieces.findIndex(q=>q===p);
+ if(idx<0)return -99999;
  const target=at(x,y);
  if(target)pieces.splice(pieces.indexOf(target),1);
- p.x=x;p.y=y;
+ const live=pieces.find(q=>q.c===p.c&&q.x===p.x&&q.y===p.y);
+ if(!live){pieces=snapshot;return -99999}
+ live.x=x;live.y=y;
  const score=evalBoard();
  pieces=snapshot;
  return score;
