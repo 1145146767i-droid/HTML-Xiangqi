@@ -126,7 +126,7 @@ function lineCount(b,fx,fy,tx,ty){
  return n;
 }
 function pseudo(b,from,to){
- const c=b[from],d=b[to]; if(!c||from===to||(d&&red(c)===red(d))||type(d)==="k")return false;
+ const c=b[from],d=b[to]; if(!c||from===to||(d&&red(c)===red(d)))return false;
  const [fx,fy]=xy(from),[tx,ty]=xy(to),dx=tx-fx,dy=ty-fy,ax=Math.abs(dx),ay=Math.abs(dy),t=type(c);
  if(t==="k")return ax+ay===1&&palace(c,tx,ty);
  if(t==="a")return ax===1&&ay===1&&palace(c,tx,ty);
@@ -179,7 +179,7 @@ function pieceVal(c){return c?val[type(c)]||0:0}
 function pst(c,x,y,b){
  const t=type(c),rx=red(c)?x:8-x,ry=red(c)?y:9-y;
  const center=(4-Math.abs(4-rx));
- if(t==="p")return (red(c)?9-y:y)*18 + (ry>=5?120:0) + center*8;
+ if(t==="p")return (red(c)?9-y:y)*18 + (ry<=4?120:0) + center*8;
  if(t==="n")return center*18 + (ry>=3&&ry<=6?35:0);
  if(t==="c")return center*14 + (ry===4||ry===5?30:0);
  if(t==="r")return center*8 + (ry===4||ry===5?22:0);
@@ -192,10 +192,6 @@ function evalBoard(b){
   const c=b[i],v=pieceVal(c)+pst(c,...xy(i),b);
   s+=(red(c)?-v:v);
   if(c==="r")blackR++;if(c==="R")redR++;
- }
- for(let side of ["black","red"]){
-  const ms=gen(b,side).length;
-  s+=(side==="black"?1:-1)*ms*3;
  }
  return s;
 }
@@ -222,11 +218,7 @@ function negamax(b,side,depth,alpha,beta,ply){
  const moves=gen(b,side);
  if(!moves.length)return inCheck(b,side)?-100000+ply:0;
  if(depth<=0)return qsearch(b,side,alpha,beta,ply);
- moves.sort((a,z)=>{
-  const ac=pieceVal(a.cap),zc=pieceVal(z.cap);
-  if(ac!==zc)return zc-ac;
-  const zc=givesCheck(b,z,side),ac=givesCheck(b,a,side);return zc===ac?0:(zc?1:-1);
- });
+ moves.sort((a,z)=>pieceVal(z.cap)-pieceVal(a.cap));
  let best=-Infinity;
  for(const m of moves){
   const cap=make(b,m),score=-negamax(b,side==="black"?"red":"black",depth-1,-beta,-alpha,ply+1);
@@ -267,6 +259,7 @@ function ensureAiWorker(){
  if(aiWorker)return aiWorker;
  const blob=new Blob([AI_WORKER_CODE],{type:"application/javascript"});
  aiWorker=new Worker(URL.createObjectURL(blob));
+  aiWorker.onerror=e=>{aiThinking=false;msg.textContent="AI 出错："+e.message};
  return aiWorker;
 }
 function chooseAiMove(){
@@ -286,15 +279,19 @@ function scheduleAi(){
   aiThinking=false;
   if(!aiEnabled||side!=="black"||over)return;
   const m=e.data.best;
-  if(!m)return;
-  const p=pieces.find(q=>q.x===m.from%9&&q.y===Math.floor(m.from/9));
-  if(p&&p.c===pieces.find(q=>q.x===m.to%9&&q.y===Math.floor(m.to/9))?.c) return;
-  const x=m.to%9,y=Math.floor(m.to/9);
-  if(p&&legal(p,x,y))makeMove(p,x,y);
+  let p=null,x=0,y=0;
+  if(m){p=pieces.find(q=>q.x===m.from%9&&q.y===Math.floor(m.from/9));x=m.to%9;y=Math.floor(m.to/9)}
+  if(!p||!legal(p,x,y)){
+    const all=[];
+    for(const q of pieces)if(!red(q.c))for(const mv of movesFor(q))all.push([q,mv[0],mv[1]]);
+    if(!all.length)return;
+    [p,x,y]=all[Math.floor(Math.random()*all.length)];
+  }
+  makeMove(p,x,y);
  };
  w.postMessage(chooseAiMove());
 }
-function clickPoint(x,y){if(over)return;const p=at(x,y);
+function clickPoint(x,y){if(over||(aiEnabled&&side==="black"))return;const p=at(x,y);
  if(selected){if(legal(selected,x,y)){makeMove(selected,x,y);return}if(p&&red(p.c)===(side==="red")){selected=p;msg.textContent="已选择 "+name[p.c]+"，请选择目标位置";render();return}msg.textContent="这里不能走";return}
  if(p&&red(p.c)===(side==="red")){selected=p;msg.textContent="已选择 "+name[p.c]+"，请选择目标位置";render()}
 }
@@ -321,7 +318,7 @@ function renderMoves(){
 }
 document.querySelector("#aiToggle").onclick=()=>{
  aiEnabled=!aiEnabled;
- if(!aiEnabled){aiTimerToken++;aiThinking=false}
+ if(!aiEnabled){aiTimerToken++;aiThinking=false;if(aiWorker){aiWorker.terminate();aiWorker=null}}
  document.querySelector("#aiToggle").textContent="🤖 AI："+(aiEnabled?"开启（黑方）":"关闭");
  if(aiEnabled&&side==="black")scheduleAi();
 };
@@ -349,5 +346,82 @@ document.querySelector("#undo").onclick=()=>{
  msg.textContent="已悔棋";
  render();renderMoves();
 };
+/* 扩展包：音效 / 将军高亮 / 落子动画 / 复制棋谱 / Ctrl+Z */
+(function(){
+  const css=document.createElement("style");
+  css.textContent=".piece.incheck{animation:chk .8s infinite alternate}@keyframes chk{from{filter:drop-shadow(0 0 2px #f33)}to{filter:drop-shadow(0 0 14px #f33)}}";
+  document.head.appendChild(css);
+
+  let ac=null;
+  function beep(f,d,type,v){
+    try{
+      ac=ac||new (window.AudioContext||window.webkitAudioContext)();
+      const o=ac.createOscillator(),g=ac.createGain();
+      o.type=type||"sine";o.frequency.value=f;g.gain.value=v||.15;
+      g.gain.exponentialRampToValueAtTime(.001,ac.currentTime+d);
+      o.connect(g);g.connect(ac.destination);o.start();o.stop(ac.currentTime+d);
+    }catch(e){}
+  }
+
+  const _make=makeMove;
+  makeMove=function(p,x,y){
+    const cap=!!at(x,y);
+    _make(p,x,y);
+    if(cap)beep(220,.16,"square",.1);else beep(440,.08,"sine",.15);
+    const h=history[history.length-1];
+    if(h&&h.check)setTimeout(()=>beep(880,.25,"triangle"),120);
+    if(over)setTimeout(()=>beep(330,.6,"sawtooth",.08),300);
+  };
+
+  let prevLen=0;
+  const _render=render;
+  render=function(){
+    _render();
+    const pts=board.querySelectorAll(".point");
+    const king=pieces.find(p=>p.c===(side==="red"?"K":"k"));
+    if(king&&inCheck(side)){
+      const el=pts[king.y*9+king.x]&&pts[king.y*9+king.x].querySelector(".piece");
+      if(el)el.classList.add("incheck");
+    }
+    const moved=history.length>prevLen;
+    prevLen=history.length;
+    if(moved&&last){
+      const el=pts[last.y*9+last.x]&&pts[last.y*9+last.x].querySelector(".piece");
+      if(el){
+        const dx=(last.ox-last.x)*0.11125*board.clientWidth;
+        const dy=(last.oy-last.y)*0.10044444*board.clientHeight;
+        el.animate([
+          {transform:"translate(calc(-50% + "+dx+"px),calc(-50% + "+dy+"px))"},
+          {transform:"translate(-50%,-50%)"}
+        ],{duration:200,easing:"ease-out"});
+      }
+    }
+  };
+
+  function notationText(){
+    let s="";
+    history.forEach((h,i)=>{
+      s+=(i%2===0?(i/2+1)+". ":" ")+(h.note||"").replace(" +","+")+(i%2?"\n":"");
+    });
+    return s.trim();
+  }
+
+  const btn=document.createElement("button");
+  btn.textContent="复制棋谱";
+  btn.onclick=async()=>{
+    const t=notationText();
+    if(!t){msg.textContent="还没有棋谱";return}
+    try{await navigator.clipboard.writeText(t);msg.textContent="棋谱已复制"}
+    catch(e){prompt("复制下面的棋谱：",t)}
+  };
+  document.querySelector(".buttons").appendChild(btn);
+
+  document.addEventListener("keydown",e=>{
+    if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==="z"){
+      e.preventDefault();
+      document.querySelector("#undo").click();
+    }
+  });
+})();
 initial();
 </script></body></html>
