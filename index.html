@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>中国象棋 · 楚河汉界</title>
+<style>
+:root{--wood:#d8a65b;--line:#4d2b16;--red:#b51f2a;--black:#171717;--paper:#f7e7bd}
+*{box-sizing:border-box}body{margin:0;min-height:100vh;background:radial-gradient(circle at top,#4b3425,#17110e 70%);color:#fff;font-family:"Noto Serif SC","Microsoft YaHei",serif;display:flex;justify-content:center;padding:24px}
+.app{width:min(980px,100%)}h1{text-align:center;margin:0 0 6px;font-size:clamp(26px,5vw,42px);letter-spacing:4px}.sub{text-align:center;opacity:.75;margin-bottom:18px}
+.game{display:grid;grid-template-columns:minmax(300px,680px) 250px;gap:18px;align-items:start}.board-wrap{background:#9b6334;padding:14px;border-radius:18px;box-shadow:0 18px 50px #0008}
+.board{position:relative;width:100%;aspect-ratio:9/10;background:var(--wood);border:2px solid #5a3219;border-radius:4px;overflow:hidden}
+.grid{position:absolute;inset:4.8% 5.5%;background:
+linear-gradient(var(--line),var(--line)) 0 0/100% 1px no-repeat,
+linear-gradient(var(--line),var(--line)) 0 100%/100% 1px no-repeat;}
+.grid:before{content:"";position:absolute;inset:0;background:
+linear-gradient(90deg,var(--line) 1px,transparent 1px) 0 0/12.5% 100%,
+linear-gradient(var(--line) 1px,transparent 1px) 0 0/100% 11.1111%;opacity:.95}
+.river{position:absolute;left:5.5%;right:5.5%;top:44.44%;height:11.12%;display:flex;align-items:center;justify-content:space-around;font-size:clamp(18px,4vw,34px);font-weight:700;letter-spacing:clamp(8px,3vw,24px);color:#704522;pointer-events:none}.river span{letter-spacing:clamp(8px,3vw,24px)}
+.palace{position:absolute;left:5.5%;width:25%;height:22.22%;top:0}.palace.bottom{top:auto;bottom:0}.palace:before,.palace:after{content:"";position:absolute;left:0;right:0;top:50%;height:1px;background:var(--line);transform:rotate(26.565deg)}.palace:after{transform:rotate(-26.565deg)}
+.point{position:absolute;width:10%;height:8%;transform:translate(-50%,-50%);z-index:2}.piece{width:min(9.2vw,58px);height:min(9.2vw,58px);max-width:58px;max-height:58px;min-width:34px;min-height:34px;border-radius:50%;position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);display:flex;align-items:center;justify-content:center;font-size:clamp(23px,4.6vw,38px);font-weight:700;background:radial-gradient(circle at 35% 30%,#fff,#eee 45%,#cfc8b8);border:3px solid #7b7163;box-shadow:0 4px 8px #0008,inset 0 0 0 2px #fff8;cursor:pointer;user-select:none}.piece.red{color:var(--red);border-color:#a66a58}.piece.black{color:#171717}.point.selected .piece{outline:4px solid #ffd84d;box-shadow:0 0 18px #ffd84d,0 4px 8px #0008}.point.legal:after{content:"";position:absolute;width:13px;height:13px;border-radius:50%;background:#37a84a;left:50%;top:50%;transform:translate(-50%,-50%);z-index:-1}.point.capture:after{content:"";position:absolute;width:72%;height:72%;border-radius:50%;border:4px solid #e33;left:50%;top:50%;transform:translate(-50%,-50%);z-index:-1}
+.panel{background:#241a15;border:1px solid #5b4435;border-radius:16px;padding:16px;box-shadow:0 12px 30px #0006}.status{padding:12px;border-radius:10px;background:#35261d;margin-bottom:12px;line-height:1.6}.turn{font-size:20px;font-weight:700}.buttons{display:grid;grid-template-columns:1fr 1fr;gap:8px}button{border:0;border-radius:9px;padding:10px;background:#b77a3c;color:#fff;font-size:15px;cursor:pointer}button:hover{filter:brightness(1.15)}.moves{margin-top:14px;max-height:280px;overflow:auto;background:#17110e;border-radius:10px;padding:10px;font-family:monospace;font-size:13px;line-height:1.7}.tip{font-size:13px;opacity:.7;line-height:1.6;margin-top:12px}
+@media(max-width:760px){body{padding:10px}.game{grid-template-columns:1fr}.panel{order:2}.board-wrap{padding:8px}}
+</style>
+</head>
+<body>
+<div class="app">
+<h1>中国象棋</h1><div class="sub">楚河汉界 · 红方先行</div>
+<div class="game">
+<div class="board-wrap"><div id="board" class="board"><div class="grid"></div><div class="river"><span>楚河</span><span>汉界</span></div><div class="palace"></div><div class="palace bottom"></div></div></div>
+<div class="panel">
+<div class="status"><div>当前回合</div><div id="turn" class="turn">红方 · 帅</div><div id="message">请选择一个红方棋子</div></div>
+<div class="buttons"><button id="reset">重新开始</button><button id="undo">悔棋</button></div>
+<div id="moves" class="moves">暂无走棋记录</div>
+<div class="tip">点击棋子选择，再点击目标交叉点移动。已实现帅、士、象、马、车、炮、兵/卒的基本走法、阻挡、吃子、将帅照面限制。</div>
+</div></div>
+</div>
+<script>
+const board=document.querySelector('#board'),turnEl=document.querySelector('#turn'),msg=document.querySelector('#message'),movesEl=document.querySelector('#moves');
+const names={K:'帅',A:'仕',B:'相',N:'马',R:'车',C:'炮',P:'兵',k:'将',a:'士',b:'象',n:'马',r:'车',c:'炮',p:'卒'};
+const red=c=>/[KABNRCP]/.test(c),black=c=>/[kabnrcp]/.test(c);
+let pieces=[],selected=null,history=[],side='red';
+
+function initial(){pieces=[
+['r',0,0],['n',1,0],['b',2,0],['a',3,0],['k',4,0],['a',5,0],['b',6,0],['n',7,0],['r',8,0],
+['c',1,2],['c',7,2],['p',0,3],['p',2,3],['p',4,3],['p',6,3],['p',8,3],
+['R',0,9],['N',1,9],['B',2,9],['A',3,9],['K',4,9],['A',5,9],['B',6,9],['N',7,9],['R',8,9],
+['C',1,7],['C',7,7],['P',0,6],['P',2,6],['P',4,6],['P',6,6],['P',8,6]
+].map(x=>({c:x[0],x:x[1],y:x[2]}));selected=null;history=[];side='red';render();log()}
+function at(x,y){return pieces.find(p=>p.x===x&&p.y===y)}
+function inside(x,y){return x>=0&&x<=8&&y>=0&&y<=9}
+function clearLine(x1,y1,x2,y2){let dx=Math.sign(x2-x1),dy=Math.sign(y2-y1),x=x1+dx,y=y1+dy,n=0;while(x!==x2||y!==y2){if(at(x,y))n++;x+=dx;y+=dy}return n}
+function palace(p,x,y){return x>=3&&x<=5&&(p==='K'||p==='A'?y>=7:y<=2)}
+function pseudo(p,x,y){let dx=x-p.x,dy=y-p.y,adx=Math.abs(dx),ady=Math.abs(dy), crossed=p.c==='P'||p.c==='p'? (red(p.c)?p.y<=4:p.y>=5):true;
+if(!inside(x,y)||dx===0&&dy===0)return false;let dest=at(x,y);if(dest&&(red(dest.c)===red(p.c)))return false;
+switch(p.c.toLowerCase()){
+case'k':return adx+ady===1&&palace(p.c,x,y);
+case'a':return adx===1&&ady===1&&palace(p.c,x,y);
+case'b':return adx===2&&ady===2&&(red(p.c)?y>=5:y<=4)&&!at(p.x+dx/2,p.y+dy/2);
+case'n':return adx*ady===2&&!at(p.x+(adx===1?0:dx/2),p.y+(ady===1?0:dy/2));
+case'r':return (dx===0||dy===0)&&clearLine(p.x,p.y,x,y)===0;
+case'c':{let n=clearLine(p.x,p.y,x,y);return (dx===0||dy===0)&&n===(dest?1:0)}
+case'p':return red(p.c)?((p.y>=5&&dy===-1&&dx===0)||(p.y<5&&dy===-1&&adx===1)) : ((p.y<=4&&dy===1&&dx===0)||(p.y>4&&dy===1&&adx===1));
+}return false}
+function wouldFace(p,x,y){let old={x:p.x,y:p.y},cap=at(x,y);p.x=x;p.y=y;let K=pieces.find(q=>q.c==='K'),k=pieces.find(q=>q.c==='k');let bad=false;if(K&&k&&K.x===k.x)bad=clearLine(K.x,K.y,k.x,k.y)===0;p.x=old.x;p.y=old.y;return bad}
+function legal(p,x,y){if(!pseudo(p,x,y))return false;let dest=at(x,y),old={x:p.x,y:p.y};if(dest)pieces.splice(pieces.indexOf(dest),1);p.x=x;p.y=y;let me=red(p.c),king=pieces.find(q=>q.c===(me?'K':'k'));let enemy=pieces.find(q=>q.c===(me?'k':'K'));let attacked=king&&enemy&&false; // king safety handled below
+let illegal=wouldFace(p,x,y);p.x=old.x;p.y=old.y;if(dest)pieces.push(dest);
+if(illegal)return false;
+if(king){for(const q of pieces){if(red(q.c)!==me&&pseudo(q,king.x,king.y)){return false}}}
+return true}
+function movesFor(p){return [...Array(10)].flatMap((_,y)=>[...Array(9)].map((_,x)=>legal(p,x,y)?[x,y]:null).filter(Boolean)}
+function check(){let K=pieces.find(p=>p.c==='K'),k=pieces.find(p=>p.c==='k');for(const target of [K,k]){if(!target)continue;let enemy=target.c==='K'?black:red;if(pieces.some(p=>enemy(p.c)&&pseudo(p,target.x,target.y)))return target.c==='K'?'红帅被将军':'黑将被将军'}return ''}
+function render(){board.querySelectorAll('.point').forEach(e=>e.remove());for(let y=0;y<10;y++)for(let x=0;x<9;x++){let pt=document.createElement('div');pt.className='point';pt.style.left=(5.5+x*12.5)+'%';pt.style.top=(4.8+y*11.1111)+'%';let p=at(x,y);if(p){let el=document.createElement('div');el.className='piece '+(red(p.c)?'red':'black');el.textContent=names[p.c];el.dataset.x=x;el.dataset.y=y;pt.appendChild(el)}if(selected&&selected.x===x&&selected.y===y)pt.classList.add('selected');if(selected){let lm=movesFor(selected);if(lm.some(v=>v[0]===x&&v[1]===y))pt.classList.add(at(x,y)?'capture':'legal')}pt.onclick=()=>clickPoint(x,y);board.appendChild(pt)}
+turnEl.textContent=side==='red'?'红方 · '+(check()||'请走棋'):'黑方 · '+(check()||'请走棋');}
+function clickPoint(x,y){let p=at(x,y);if(selected){if(legal(selected,x,y)){let old={c:selected.c,x:selected.x,y:selected.y,captured:p?.c||null};history.push(JSON.stringify({pieces:pieces.map(q=>({...q})),side}));if(p)pieces.splice(pieces.indexOf(p),1);selected.x=x;selected.y=y;side=side==='red'?'black':'red';selected=null;log();render();if(!pieces.some(q=>q.c===(side==='red'?'K':'k')))msg.textContent='对局结束';else msg.textContent='请选择一个'+(side==='red'?'红':'黑')+'方棋子';}else if(p&&red(p.c)=== (side==='red')){selected=p;render()}else{msg.textContent='这里不能走'}return}if(p&&red(p.c)===(side==='red')){selected=p;msg.textContent='已选择 '+names[p.c]+'，请选择目标位置';render()}}
+function log(){movesEl.innerHTML=history.length?history.map((h,i)=>{let s=JSON.parse(h);return (i+1)+'. '+(i%2===0?'红方':'黑方')}).join('<br>'):'暂无走棋记录'}
+document.querySelector('#reset').onclick=initial;document.querySelector('#undo').onclick=()=>{let h=history.pop();if(!h)return;let s=JSON.parse(h);pieces=s.pieces;side=s.side;selected=null;log();render();msg.textContent='已悔棋'};
+initial();
+</script>
+</body></html>
