@@ -170,10 +170,10 @@ function chooseAiMove(){
    let score;
    if(aiLevel===1){
     score=simulateScore(p,x,y);
-    if(captured)score+=pieceValue(captured.c)*0.35;
+    
    }else{
     score=replyScoreAfterBlackMove(p,x,y);
-    if(captured)score+=pieceValue(captured.c)*0.2;
+    
    }
    candidates.push({p,x,y,score});
   }
@@ -220,7 +220,12 @@ function renderMoves(){
  movesEl.innerHTML=history.map((h,i)=>'<div class="move-row"><span class="move-no">'+(Math.floor(i/2)+1)+(i%2===0?".":"...")+'</span><span class="'+(h.check?"check":"")+'">'+(h.note||"")+'</span></div>').join("");
  movesEl.scrollTop=movesEl.scrollHeight;
 }
-document.querySelector("#aiToggle").onclick=()=>{aiEnabled=!aiEnabled;document.querySelector("#aiToggle").textContent="🤖 AI："+(aiEnabled?"开启（黑方）":"关闭");if(aiEnabled&&side==="black")scheduleAi()};
+document.querySelector("#aiToggle").onclick=()=>{
+ aiEnabled=!aiEnabled;
+ if(!aiEnabled){aiTimerToken++;aiThinking=false}
+ document.querySelector("#aiToggle").textContent="🤖 AI："+(aiEnabled?"开启（黑方）":"关闭");
+ if(aiEnabled&&side==="black")scheduleAi();
+};
 document.querySelector("#aiDepth").onclick=()=>{aiLevel=aiLevel===1?2:1;document.querySelector("#aiDepth").textContent=aiLevel===1?"难度：随机优选":"难度：更认真"};
 document.querySelector("#reset").onclick=()=>{
  aiTimerToken++;
