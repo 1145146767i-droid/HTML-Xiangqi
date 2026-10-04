@@ -325,7 +325,10 @@ document.querySelector("#aiToggle").onclick=()=>{
  document.querySelector("#aiToggle").textContent="🤖 AI："+(aiEnabled?"开启（黑方）":"关闭");
  if(aiEnabled&&side==="black")scheduleAi();
 };
-document.querySelector("#aiDepth").onclick=()=>{aiLevel=aiLevel===1?2:1;document.querySelector("#aiDepth").textContent=aiLevel===1?"难度：随机优选":"难度：更认真"};
+document.querySelector("#aiDepth").onclick=()=>{
+ aiLevel=aiLevel===1?2:aiLevel===2?3:1;
+ document.querySelector("#aiDepth").textContent=aiLevel===1?"难度：初级（2层）":aiLevel===2?"难度：进阶（3层）":"难度：大师（4层）";
+};
 document.querySelector("#reset").onclick=()=>{
  aiTimerToken++;
  aiThinking=false;
