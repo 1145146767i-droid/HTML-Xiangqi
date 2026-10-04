@@ -14,21 +14,24 @@ linear-gradient(to right,transparent calc(12.5% - .5px),var(--line) calc(12.5% -
 linear-gradient(to bottom,transparent calc(11.111% - .5px),var(--line) calc(11.111% - .5px),var(--line) calc(11.111% + .5px),transparent calc(11.111% + .5px),transparent calc(22.222% - .5px),var(--line) calc(22.222% - .5px),var(--line) calc(22.222% + .5px),transparent calc(22.222% + .5px),transparent calc(33.333% - .5px),var(--line) calc(33.333% - .5px),var(--line) calc(33.333% + .5px),transparent calc(33.333% + .5px),transparent calc(44.444% - .5px),var(--line) calc(44.444% - .5px),var(--line) calc(44.444% + .5px),transparent calc(44.444% + .5px),transparent 55.556%,var(--line) 55.556%,var(--line) calc(55.556% + 1px),transparent calc(55.556% + 1px),transparent calc(66.667% - .5px),var(--line) calc(66.667% - .5px),var(--line) calc(66.667% + .5px),transparent calc(66.667% + .5px),transparent calc(77.778% - .5px),var(--line) calc(77.778% - .5px),var(--line) calc(77.778% + .5px),transparent calc(77.778% + .5px),transparent calc(88.889% - .5px),var(--line) calc(88.889% - .5px),var(--line) calc(88.889% + .5px),transparent calc(88.889% + .5px),transparent)}
 .palace{position:absolute;left:38.875%;width:22.25%;height:20.089%;top:4.8%;background:linear-gradient(26.565deg,transparent 49.5%,var(--line) 49.5%,var(--line) 50.5%,transparent 50.5%),linear-gradient(-26.565deg,transparent 49.5%,var(--line) 49.5%,var(--line) 50.5%,transparent 50.5%);pointer-events:none}.palace.bottom{top:auto;bottom:4.8%}
 .river{position:absolute;left:5.5%;right:5.5%;top:45%;height:10%;display:flex;align-items:center;justify-content:space-around;color:#704522;font-weight:700;font-size:clamp(18px,4vw,34px);letter-spacing:clamp(8px,3vw,25px);pointer-events:none}.river span{letter-spacing:clamp(8px,3vw,25px)}
-.point{position:absolute;width:11.125%;height:10.044%;transform:translate(-50%,-50%);z-index:3}.piece{width:min(9.2vw,58px);height:min(9.2vw,58px);min-width:34px;min-height:34px;max-width:58px;max-height:58px;border-radius:50%;position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);display:flex;align-items:center;justify-content:center;font-size:clamp(23px,4.6vw,38px);font-weight:700;background:radial-gradient(circle at 35% 28%,#fff,#eee 45%,#c9c1b3);border:3px solid #776e62;box-shadow:0 4px 8px #0008,inset 0 0 0 2px #fff8;cursor:pointer;user-select:none}.piece.red{color:var(--red);border-color:#a05d51}.piece.black{color:#171717}.point.selected .piece{outline:4px solid #ffd34e;box-shadow:0 0 18px #ffd34e,0 4px 8px #0008}.point.last .piece{box-shadow:0 0 0 4px #5db8ff,0 4px 8px #0008}.point.legal:after{content:"";position:absolute;width:13px;height:13px;border-radius:50%;background:#2ca34a;left:50%;top:50%;transform:translate(-50%,-50%);z-index:-1}.point.capture:after{content:"";position:absolute;width:72%;height:72%;border-radius:50%;border:4px solid #e33;left:50%;top:50%;transform:translate(-50%,-50%);z-index:-1}
+.point{position:absolute;width:11.125%;height:10.044%;transform:translate(-50%,-50%);z-index:3}.piece{width:min(9.2vw,58px);height:min(9.2vw,58px);min-width:34px;min-height:34px;max-width:58px;max-height:58px;border-radius:50%;position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);display:flex;align-items:center;justify-content:center;font-size:clamp(23px,4.6vw,38px);font-weight:700;background:radial-gradient(circle at 35% 28%,#fff,#eee 45%,#c9c1b3);border:3px solid #776e62;box-shadow:0 4px 8px #0008,inset 0 0 0 2px #fff8;cursor:pointer;user-select:none}.piece.red{color:var(--red);border-color:#a05d51}.piece.black{color:#171717}.point.selected .piece{outline:4px solid #ffd34e;box-shadow:0 0 18px #ffd34e,0 4px 8px #0008}.point.last .piece{box-shadow:0 0 0 4px #5db8ff,0 4px 8px #0008}.point.legal:after{content:"";position:absolute;width:13px;height:13px;border-radius:50%;background:#2ca34a;left:50%;top:50%;transform:translate(-50%,-50%);z-index:-1}.point.capture:after{content:"";position:absolute;width:72%;height:72%;border-radius:50%;border:4px solid #e33;left:50%;top:50%;transform:translate(-50%,-50%);z-index:-1}.marker{position:absolute;width:18%;height:18%;z-index:2;pointer-events:none}.marker:before,.marker:after{content:"";position:absolute;background:#704522;border-radius:1px}.marker:before{width:42%;height:2px;left:0;top:0;box-shadow:calc(138% - 2px) 0 0 #704522}.marker:after{width:2px;height:42%;left:0;top:0;box-shadow:0 calc(138% - 2px) 0 #704522}.marker.tl{left:1.8%;top:8%}.marker.tr{right:1.8%;top:8%;transform:scaleX(-1)}.marker.bl{left:1.8%;bottom:8%;transform:scaleY(-1)}.marker.br{right:1.8%;bottom:8%;transform:scale(-1,-1)}
 .panel{background:#241a15;border:1px solid #5b4435;border-radius:15px;padding:15px;box-shadow:0 12px 30px #0006}.status{padding:12px;border-radius:10px;background:#35261d;margin-bottom:12px;line-height:1.6}.turn{font-size:20px;font-weight:700}.buttons{display:grid;grid-template-columns:1fr 1fr;gap:8px}button{border:0;border-radius:9px;padding:10px;background:#b77a3c;color:#fff;font-size:15px;cursor:pointer}button:hover{filter:brightness(1.15)}.moves{margin-top:14px;max-height:300px;overflow:auto;background:#17110e;border-radius:10px;padding:10px;font-size:14px;line-height:1.8}.move-row{display:flex;gap:10px}.move-no{width:30px;opacity:.55}.check{color:#ffcc54;font-weight:700}.tip{font-size:13px;opacity:.7;line-height:1.6;margin-top:12px}
 @media(max-width:780px){body{padding:9px}.game{grid-template-columns:1fr}.panel{order:2}.board-wrap{padding:7px}}
 </style></head>
 <body><div class="app"><h1>中国象棋</h1><div class="sub">楚河汉界 · 红方先行</div>
 <div class="game"><div class="board-wrap"><div id="board" class="board"><div class="grid"></div><div class="river"><span>楚河</span><span>汉界</span></div><div class="palace"></div><div class="palace bottom"></div></div></div>
-<div class="panel"><div class="status"><div>当前回合</div><div id="turn" class="turn"></div><div id="message">请选择棋子</div></div><div class="buttons"><button id="reset">重新开始</button><button id="undo">悔棋</button></div><div id="moves" class="moves">暂无走棋记录</div><div class="tip">绿色圆点=可走位置，红圈=可吃子位置，蓝框=最后一步。被将军时必须应将；将死、困毙均结束对局。</div></div></div></div>
+<div class="panel"><div class="status"><div>当前回合</div><div id="turn" class="turn"></div><div id="message">请选择棋子</div></div><div class="buttons"><button id="reset">重新开始</button><button id="undo">悔棋</button></div><div id="moves" class="moves">暂无走棋记录</div><div class="tip">绿色圆点=可走位置，红圈=可吃子位置，蓝框=最后一步。棋谱按红方汉字路数、黑方阿拉伯路数记录，将军用 + 标记；三次完全重复局面会判和。</div></div></div></div>
 <script>
 const board=document.querySelector("#board"),turnEl=document.querySelector("#turn"),msg=document.querySelector("#message"),movesEl=document.querySelector("#moves");
 const name={K:"帅",A:"仕",B:"相",N:"马",R:"车",C:"炮",P:"兵",k:"将",a:"士",b:"象",n:"马",r:"车",c:"炮",p:"卒"};
 const red=c=>/[KABNRCP]/.test(c),inside=(x,y)=>x>=0&&x<9&&y>=0&&y<10;
-const file=x=>9-x,cn=n=>["零","一","二","三","四","五","六","七","八","九"][n];
-let pieces=[],side="red",selected=null,history=[],last=null,over=false;
+const redFiles=["零","一","二","三","四","五","六","七","八","九"];
+function route(x,isRed){return isRed?9-x:x+1}
+function routeText(x,isRed){return isRed?redFiles[route(x,true)]:String(route(x,false))}
+let pieces=[],side="red",selected=null,history=[],last=null,over=false,positionCounts={};
 
-function initial(){pieces=[["r",0,0],["n",1,0],["b",2,0],["a",3,0],["k",4,0],["a",5,0],["b",6,0],["n",7,0],["r",8,0],["c",1,2],["c",7,2],["p",0,3],["p",2,3],["p",4,3],["p",6,3],["p",8,3],["R",0,9],["N",1,9],["B",2,9],["A",3,9],["K",4,9],["A",5,9],["B",6,9],["N",7,9],["R",8,9],["C",1,7],["C",7,7],["P",0,6],["P",2,6],["P",4,6],["P",6,6],["P",8,6]].map(([c,x,y])=>({c,x,y}));side="red";selected=null;history=[];last=null;over=false;msg.textContent="请选择一个红方棋子";render();renderMoves()}
+function positionKey(){return side+"|"+pieces.map(p=>p.c+","+p.x+","+p.y).sort().join(";")}
+function initial(){pieces=[["r",0,0],["n",1,0],["b",2,0],["a",3,0],["k",4,0],["a",5,0],["b",6,0],["n",7,0],["r",8,0],["c",1,2],["c",7,2],["p",0,3],["p",2,3],["p",4,3],["p",6,3],["p",8,3],["R",0,9],["N",1,9],["B",2,9],["A",3,9],["K",4,9],["A",5,9],["B",6,9],["N",7,9],["R",8,9],["C",1,7],["C",7,7],["P",0,6],["P",2,6],["P",4,6],["P",6,6],["P",8,6]].map(([c,x,y])=>({c,x,y}));side="red";selected=null;history=[];last=null;over=false;positionCounts={};positionCounts[positionKey()]=1;msg.textContent="请选择一个红方棋子";render();renderMoves()}
 function at(x,y){return pieces.find(p=>p.x===x&&p.y===y)}
 function lineCount(x1,y1,x2,y2){let dx=Math.sign(x2-x1),dy=Math.sign(y2-y1),x=x1+dx,y=y1+dy,n=0;while(x!==x2||y!==y2){if(at(x,y))n++;x+=dx;y+=dy}return n}
 function inPalace(p,x,y){return x>=3&&x<=5&&(red(p.c)?y>=7:y<=2)}
@@ -67,28 +70,45 @@ function legal(p,x,y){
 }
 function movesFor(p){const out=[];for(let y=0;y<10;y++)for(let x=0;x<9;x++)if(legal(p,x,y))out.push([x,y]);return out}
 function allMoves(color){const out=[];for(const p of pieces)if(red(p.c)===(color==="red")&&movesFor(p).length)out.push(p);return out}
-function notation(p,ox,oy,nx,ny,captured){
- const prefix=name[p.c],start=file(ox),end=file(nx),dy=ny-oy,forward=red(p.c)?-1:1;
+function disambiguator(p,ox,oy){
+ const same=pieces.filter(q=>q!==p&&q.c===p.c&&q.x===ox);
+ if(!same.length)return null;
+ const front=red(p.c)?q=>q.y<oy:q=>q.y>oy;
+ return front(p)?"前":"后";
+}
+function notation(p,ox,oy,nx,ny){
+ const isRed=red(p.c),prefix=name[p.c],amb=disambiguator(p,ox,oy),dy=ny-oy,forward=isRed?-1:1;
  let action,detail;
- if(ox===nx){action=dy*forward>0?"进":"退";detail=Math.abs(dy);if(["n","b","a"].includes(p.c.toLowerCase()))detail=end}
- else {action="平";detail=end}
- return prefix+cn(start)+(start!==end||action==="平"?action:"")+((action==="平"||["n","b","a"].includes(p.c.toLowerCase()))?cn(detail):cn(detail))+(captured?"×":"");
+ if(ox===nx){action=dy*forward>0?"进":"退";detail=Math.abs(dy)}
+ else{action="平";detail=route(nx,isRed)}
+ const type=p.c.toLowerCase(),lead=amb||prefix;
+ const startText=amb?"":routeText(ox,isRed);
+ const endText=(action==="平"||["n","b","a"].includes(type))?routeText(nx,isRed):(isRed?redFiles[detail]:String(detail));
+ return lead+startText+action+endText;
 }
 function makeMove(p,x,y){
- const ox=p.x,oy=p.y,dest=at(x,y),snap={pieces:pieces.map(q=>({...q})),side,last: last?{...last}:null};
- history.push(snap);const note=notation(p,ox,oy,x,y,!!dest);
- if(dest)pieces.splice(pieces.indexOf(dest),1);p.x=x;p.y=y;last={ox,oy,x,y};side=side==="red"?"black":"red";selected=null;
- const chk=inCheck(side),moves=allMoves(side);
- if(!moves.length){over=true;msg.textContent=chk?(side==="red"?"红方被将死，黑方胜！":"黑方被将死，红方胜！"):(side==="red"?"红方被困毙，黑方胜！":"黑方被困毙，红方胜！")}
+ const ox=p.x,oy=p.y,dest=at(x,y),snap={pieces:pieces.map(q=>({...q})),side,last:last?{...last}:null,positionCounts:{...positionCounts}};
+ history.push(snap);
+ if(dest)pieces.splice(pieces.indexOf(dest),1);
+ p.x=x;p.y=y;last={ox,oy,x,y};side=side==="red"?"black":"red";selected=null;
+ const chk=inCheck(side),moves=allMoves(side),key=positionKey();
+ positionCounts[key]=(positionCounts[key]||0)+1;
+ let note=notation(p,ox,oy,x,y);
+ if(chk)note+=" +";
+ history[history.length-1].note=note;history[history.length-1].check=chk;
+ if(positionCounts[key]>=3){over=true;msg.textContent="三次重复局面，和棋！"}
+ else if(!moves.length){over=true;msg.textContent=chk?(side==="red"?"红方被将死，黑方胜！":"黑方被将死，红方胜！"):(side==="red"?"红方被困毙，黑方胜！":"黑方被困毙，红方胜！")}
  else msg.textContent=chk?(side==="red"?"红方被将军！必须应将":"黑方被将军！必须应将"):"请选择一个"+(side==="red"?"红":"黑")+"方棋子";
- history[history.length-1].note=note;render();renderMoves()
+ render();renderMoves()
 }
 function clickPoint(x,y){if(over)return;const p=at(x,y);
  if(selected){if(legal(selected,x,y)){makeMove(selected,x,y);return}if(p&&red(p.c)===(side==="red")){selected=p;msg.textContent="已选择 "+name[p.c]+"，请选择目标位置";render();return}msg.textContent="这里不能走";return}
  if(p&&red(p.c)===(side==="red")){selected=p;msg.textContent="已选择 "+name[p.c]+"，请选择目标位置";render()}
 }
+function addMarker(x,y,cls){const m=document.createElement("i");m.className="marker "+cls;m.style.left=(5.5+x*11.125-1.05)+"%";m.style.top=(4.8+y*10.044444-1.0)+"%";board.appendChild(m)}
 function render(){
- board.querySelectorAll(".point").forEach(e=>e.remove());
+ board.querySelectorAll(".point,.marker").forEach(e=>e.remove());
+ [[0,3,"tl"],[2,3,"tl"],[4,3,"tl"],[6,3,"tl"],[8,3,"tr"],[1,2,"tl"],[7,2,"tr"],[0,6,"bl"],[2,6,"bl"],[4,6,"bl"],[6,6,"br"],[8,6,"br"],[1,7,"bl"],[7,7,"br"]].forEach(v=>addMarker(v[0],v[1],v[2]));
  for(let y=0;y<10;y++)for(let x=0;x<9;x++){
   const pt=document.createElement("div");pt.className="point";pt.style.left=(5.5+x*11.125)+"%";pt.style.top=(4.8+y*10.044444)+"%";
   const p=at(x,y);
@@ -102,10 +122,10 @@ function render(){
 }
 function renderMoves(){
  if(!history.length){movesEl.textContent="暂无走棋记录";return}
- movesEl.innerHTML=history.map((h,i)=>'<div class="move-row"><span class="move-no">'+(Math.floor(i/2)+1)+(i%2===0?".":"...")+'</span><span class="'+(h.note?.includes("将")?"check":"")+'">'+(h.note||"")+'</span></div>').join("");
+ movesEl.innerHTML=history.map((h,i)=>'<div class="move-row"><span class="move-no">'+(Math.floor(i/2)+1)+(i%2===0?".":"...")+'</span><span class="'+(h.check?"check":"")+'">'+(h.note||"")+'</span></div>').join("");
  movesEl.scrollTop=movesEl.scrollHeight;
 }
 document.querySelector("#reset").onclick=initial;
-document.querySelector("#undo").onclick=()=>{const h=history.pop();if(!h)return;pieces=h.pieces.map(q=>({...q}));side=h.side;last=h.last;selected=null;over=false;msg.textContent="已悔棋";render();renderMoves()};
+document.querySelector("#undo").onclick=()=>{const h=history.pop();if(!h)return;pieces=h.pieces.map(q=>({...q}));side=h.side;last=h.last;positionCounts={...h.positionCounts};selected=null;over=false;msg.textContent="已悔棋";render();renderMoves()};
 initial();
 </script></body></html>
